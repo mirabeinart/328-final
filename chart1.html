@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olympic 100m Winning Times</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+
+  .chart-wrap { width: 100%; max-width: 960px; overflow-x: auto; position: relative; }
+  svg { display: block; width: 100%; min-width: 600px; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: #111;
+    color: #f5f2eb;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 10;
+    transform: translate(-50%, -100%);
+    margin-top: -12px;
+  }
+  .tooltip.visible { opacity: 1; }
+  .tt-name { font-style: italic; font-size: 14px; margin-bottom: 2px; }
+  .tt-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #aaa; letter-spacing: 0.05em; }
+  .tt-time { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; color: #f5c842; margin-top: 3px; }
+  .tt-note { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #e8a87c; margin-top: 3px; max-width: 220px; white-space: normal; line-height: 1.4; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1.5rem;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.1em; color: #888; text-transform: uppercase;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="chart-wrap">
+  <svg id="chart" viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="tooltip" id="tooltip">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-meta" id="tt-meta"></div>
+    <div class="tt-time" id="tt-time"></div>
+    <div class="tt-note" id="tt-note"></div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4a90d9"></div>United States</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f5c842;border:1px solid #ddd"></div>Caribbean</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e8734a"></div>Europe</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b07fd4"></div>Canada</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7ac97a"></div>Other</div>
+  </div>
+</div>
+
+<script>
+const winners = [
+  { year:1896, name:"Tom Burke",        noc:"USA", time:12.0,  note:null },
+  { year:1900, name:"Frank Jarvis",     noc:"USA", time:11.0,  note:null },
+  { year:1904, name:"Archie Hahn",      noc:"USA", time:null,  note:"No official time recorded" },
+  { year:1906, name:"Archie Hahn",      noc:"USA", time:11.2,  note:"Intercalated Games (unofficial Olympics)" },
+  { year:1908, name:"Reggie Walker",    noc:"RSA", time:10.8,  note:null },
+  { year:1912, name:"Ralph Craig",      noc:"USA", time:10.8,  note:null },
+  { year:1920, name:"Charley Paddock",  noc:"USA", time:10.8,  note:null },
+  { year:1924, name:"Harold Abrahams",  noc:"GBR", time:10.6,  note:"Immortalised in Chariots of Fire" },
+  { year:1928, name:"Percy Williams",   noc:"CAN", time:10.8,  note:null },
+  { year:1932, name:"Eddie Tolan",      noc:"USA", time:10.3,  note:null },
+  { year:1936, name:"Jesse Owens",      noc:"USA", time:10.3,  note:"Berlin — four gold medals defied Nazi ideology" },
+  { year:1948, name:"Harrison Dillard", noc:"USA", time:10.3,  note:null },
+  { year:1952, name:"Lindy Remigino",   noc:"USA", time:10.4,  note:null },
+  { year:1956, name:"Bobby Morrow",     noc:"USA", time:10.5,  note:null },
+  { year:1960, name:"Armin Hary",       noc:"GER", time:10.2,  note:null },
+  { year:1964, name:"Bob Hayes",        noc:"USA", time:10.0,  note:"Later became NFL star with Dallas Cowboys" },
+  { year:1968, name:"Jim Hines",        noc:"USA", time:9.95,  note:"First official sub-10 second 100m in history" },
+  { year:1972, name:"Valery Borzov",    noc:"URS", time:10.14, note:null },
+  { year:1976, name:"Hasely Crawford",  noc:"TTO", time:10.06, note:"Trinidad & Tobago's first Olympic gold" },
+  { year:1980, name:"Allan Wells",      noc:"GBR", time:10.25, note:"USA boycotted the Moscow Games" },
+  { year:1984, name:"Carl Lewis",       noc:"USA", time:9.99,  note:null },
+  { year:1988, name:"Carl Lewis",       noc:"USA", time:9.92,  note:"Ben Johnson ran 9.79 but was stripped for doping" },
+  { year:1992, name:"Linford Christie", noc:"GBR", time:9.96,  note:"Oldest 100m champion at 32" },
+  { year:1996, name:"Donovan Bailey",   noc:"CAN", time:9.84,  note:"World record at Atlanta" },
+  { year:2000, name:"Maurice Greene",   noc:"USA", time:9.87,  note:null },
+  { year:2004, name:"Justin Gatlin",    noc:"USA", time:9.85,  note:null },
+  { year:2008, name:"Usain Bolt",       noc:"JAM", time:9.69,  note:"Slowed to celebrate — WR of 9.58 set in 2009" },
+  { year:2012, name:"Usain Bolt",       noc:"JAM", time:9.63,  note:"Olympic record — still stands" },
+  { year:2016, name:"Usain Bolt",       noc:"JAM", time:9.81,  note:"Third consecutive Olympic 100m gold" },
+  { year:2020, name:"Marcell Jacobs",   noc:"ITA", time:9.80,  note:"Surprise winner in Tokyo" },
+  { year:2024, name:"Noah Lyles",       noc:"USA", time:9.784, note:"Won by 0.005s — closest finish in Olympic history" },
+];
+
+function regionColor(noc) {
+  if (noc === "USA") return "#4a90d9";
+  if (["JAM","TTO","BAR","PAN"].includes(noc)) return "#f5c842";
+  if (["GBR","GER","ITA","URS","BUL","RSA"].includes(noc)) return "#e8734a";
+  if (noc === "CAN") return "#b07fd4";
+  return "#7ac97a";
+}
+
+const svgEl = document.getElementById("chart");
+const tooltip = document.getElementById("tooltip");
+const wrap = document.querySelector(".chart-wrap");
+
+const W = 900, H = 480;
+const pad = { top: 40, right: 40, bottom: 55, left: 72 };
+const pw = W - pad.left - pad.right;
+const ph = H - pad.top - pad.bottom;
+const minYear = 1893, maxYear = 2027;
+const minTime = 9.45, maxTime = 12.4;
+
+function X(year) { return pad.left + (year - minYear) / (maxYear - minYear) * pw; }
+function Y(time) { return pad.top  + (time - minTime) / (maxTime - minTime) * ph; }
+
+function el(tag, attrs, text) {
+  const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k,v));
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+// Grid lines
+[9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.2, 10.4, 10.6, 10.8, 11.0, 11.5, 12.0].forEach(t => {
+  svgEl.appendChild(el("line", {
+    x1: pad.left, y1: Y(t), x2: pad.left + pw, y2: Y(t),
+    stroke: "#ececec", "stroke-width": "1"
+  }));
+  if ([9.5, 9.7, 10.0, 10.5, 11.0, 12.0].includes(t)) {
+    svgEl.appendChild(el("text", {
+      x: pad.left - 8, y: Y(t) + 4,
+      "text-anchor": "end", fill: "#bbb",
+      "font-family": "IBM Plex Mono, monospace", "font-size": "11"
+    }, t.toFixed(1) + "s"));
+  }
+});
+
+// X-axis
+[1896, 1912, 1932, 1952, 1968, 1984, 2000, 2016, 2024].forEach(y => {
+  svgEl.appendChild(el("text", {
+    x: X(y), y: H - pad.bottom + 18, "text-anchor": "middle",
+    fill: "#bbb", "font-family": "IBM Plex Mono, monospace", "font-size": "11"
+  }, y));
+  svgEl.appendChild(el("line", {
+    x1: X(y), y1: pad.top + ph, x2: X(y), y2: pad.top + ph + 5,
+    stroke: "#ddd", "stroke-width": "1"
+  }));
+});
+
+// Trend line
+const withTime = winners.filter(d => d.time !== null);
+const pathD = withTime.map((d,i) => (i===0?"M":"L") + X(d.year) + " " + Y(d.time)).join(" ");
+svgEl.appendChild(el("path", { d: pathD, fill:"none", stroke:"#e0e0e0", "stroke-width":"2" }));
+
+// Static callout annotations (no names — just the moment)
+const staticLabels = [
+  { year:1936, time:10.3,  line1:"Jesse Owens",   line2:"Berlin, 1936",     dx:8,   dy:-34, anchor:"start" },
+  { year:1968, time:9.95,  line1:"First sub-10",  line2:"Jim Hines, 9.95s", dx:8,   dy:-34, anchor:"start" },
+  { year:1988, time:9.92,  line1:"Johnson DQ'd",  line2:"Lewis gets gold",  dx:-10, dy:-34, anchor:"end"   },
+  { year:2008, time:9.69,  line1:"Usain Bolt",    line2:"9.69 — Beijing",   dx:8,   dy:36,  anchor:"start" },
+  { year:2024, time:9.784, line1:"Noah Lyles",    line2:"9.784 — Paris",    dx:-10, dy:-34, anchor:"end"   },
+];
+
+staticLabels.forEach(a => {
+  const x = X(a.year), y = Y(a.time);
+  const lx = x + a.dx;
+  const ly = y + a.dy;
+  const lineEndY = a.dy < 0 ? ly + 16 : ly - 16;
+  svgEl.appendChild(el("line", { x1:x, y1:y, x2:lx, y2:lineEndY, stroke:"#ccc", "stroke-width":"1", "stroke-dasharray":"3 2" }));
+  svgEl.appendChild(el("text", { x:lx, y:ly, "text-anchor":a.anchor, "font-family":"IBM Plex Sans, sans-serif", "font-style":"italic", "font-size":"12", fill:"#222" }, a.line1));
+  svgEl.appendChild(el("text", { x:lx, y:ly+14, "text-anchor":a.anchor, "font-family":"IBM Plex Mono, monospace", "font-size":"10", fill:"#999" }, a.line2));
+});
+
+// Dots + tooltips
+winners.forEach(d => {
+  const cx = X(d.year);
+  const cy = d.time ? Y(d.time) : Y(10.6);
+  const color = d.time ? regionColor(d.noc) : "#ccc";
+  const isKey = staticLabels.some(s => s.year === d.year);
+
+  if (isKey) {
+    svgEl.appendChild(el("circle", { cx, cy, r:14, fill:color, opacity:"0.13" }));
+  }
+
+  const dot = el("circle", {
+    cx, cy, r: d.time ? 6 : 4,
+    fill: color, stroke: "#fff", "stroke-width": "1.5",
+    opacity: d.time ? "1" : "0.5",
+    style: "cursor:pointer;"
+  });
+
+  // Invisible larger hit area
+  const hit = el("circle", { cx, cy, r:14, fill:"transparent", style:"cursor:pointer;" });
+
+  const showTip = () => {
+    const svgRect = svgEl.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const scaleX = svgRect.width / W;
+    const scaleY = svgRect.height / H;
+    const tipX = (cx * scaleX) + (svgRect.left - wrapRect.left);
+    const tipY = (cy * scaleY) + (svgRect.top  - wrapRect.top);
+
+    document.getElementById("tt-name").textContent = d.name;
+    document.getElementById("tt-meta").textContent = d.noc + " · " + d.year;
+    document.getElementById("tt-time").textContent = d.time
+      ? d.time.toFixed(3).replace(/\.?0+$/, '') + "s"
+      : "No official time";
+    const noteEl = document.getElementById("tt-note");
+    noteEl.textContent = d.note || "";
+    noteEl.style.display = d.note ? "block" : "none";
+
+    tooltip.style.left = tipX + "px";
+    tooltip.style.top  = (tipY - 14) + "px";
+    tooltip.classList.add("visible");
+    dot.setAttribute("r", d.time ? 9 : 6);
+  };
+
+  const hideTip = () => {
+    tooltip.classList.remove("visible");
+    dot.setAttribute("r", d.time ? 6 : 4);
+  };
+
+  [dot, hit].forEach(n => {
+    n.addEventListener("mouseenter", showTip);
+    n.addEventListener("mouseleave", hideTip);
+  });
+
+  svgEl.appendChild(dot);
+  svgEl.appendChild(hit);
+});
+
+// Y-axis label
+svgEl.appendChild(el("text", {
+  x: -(pad.top + ph/2), y: 16, "text-anchor": "middle",
+  transform: "rotate(-90)",
+  "font-family": "IBM Plex Mono, monospace", "font-size": "10",
+  "letter-spacing": "2", fill: "#ccc"
+}, "WINNING TIME (SECONDS)"));
+
+// Source
+svgEl.appendChild(el("text", {
+  x: pad.left, y: H - 6, fill: "#ccc",
+  "font-family": "IBM Plex Mono, monospace", "font-size": "9", "letter-spacing": "0.5"
+}, "SOURCE: OLYMPEDIA.ORG  |  1988: BEN JOHNSON (9.79) DISQUALIFIED FOR DOPING"));
+</script>
+</body>
+</html>
