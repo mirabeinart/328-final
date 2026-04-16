@@ -164,7 +164,7 @@ const staticLabels = [
   { year:1936, time:10.3,  line1:"Jesse Owens",   line2:"Berlin, 1936",     dx:8,   dy:-34, anchor:"start" },
   { year:1988, time:9.92,  line1:"Johnson DQ'd",  line2:"Lewis gets gold",  dx:-10, dy:-34, anchor:"end"   },
   { year:2008, time:9.69,  line1:"Usain Bolt",    line2:"9.69 — Beijing",   dx:8,   dy:36,  anchor:"start" },
-  { year:2024, time:9.784, line1:"Noah Lyles",    line2:"9.784 — Paris",    dx:-10, dy:-34, anchor:"end"   },
+  { year:2024, time:9.784, line1:"Noah Lyles",    line2:"9.784 — Paris",    dx:-10, dy:-45, anchor:"end"   },
 ];
 
 staticLabels.forEach(a => {
@@ -215,8 +215,10 @@ winners.forEach(d => {
     noteEl.textContent = d.note || "";
     noteEl.style.display = d.note ? "block" : "none";
 
-    tooltip.style.left = tipX + "px";
-    tooltip.style.top  = (tipY - 14) + "px";
+   const isNearTop = tipY < 80;
+tooltip.style.left = tipX + "px";
+tooltip.style.top  = isNearTop ? (tipY + 20) + "px" : (tipY - 14) + "px";
+tooltip.style.transform = isNearTop ? "translate(-50%, 0)" : "translate(-50%, -100%)";
     tooltip.classList.add("visible");
     dot.setAttribute("r", d.time ? 9 : 6);
   };
